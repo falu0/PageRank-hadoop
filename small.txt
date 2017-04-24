@@ -1,6 +1,5 @@
-# Directed graph (each unordered pair of nodes is saved once): web-Stanford.txt 
-# Stanford web graph from 2002
-# Nodes: 281903 Edges: 2312497
+# Directed graph (each unordered pair of nodes is saved once)
+# Snippet from Stanford web graph 2002
 # FromNodeId	ToNodeId
 1	6548
 1	15409
