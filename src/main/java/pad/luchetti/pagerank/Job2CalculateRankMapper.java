@@ -34,7 +34,7 @@ public class Job2CalculateRankMapper extends Mapper<LongWritable, Text, Text, Te
 			
          */
         
-    	//could use directly array elements instead of declaring new vars, but lets choose readability
+    	//could use directly the array elements instead of declaring new vars, but lets favour readability
     	String[] valueSplit = value.toString().split("\\t");
         String page = valueSplit[0]; 
         String pageRank = valueSplit[1];

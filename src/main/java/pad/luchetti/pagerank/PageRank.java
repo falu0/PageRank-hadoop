@@ -7,22 +7,12 @@
 package pad.luchetti.pagerank;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
-import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -64,7 +54,7 @@ public class PageRank extends Configured implements Tool {
 	private static int CONVERGENCE_TEST_PERIODICITY = 2; //if 0, no test
 
 
-
+	
 	/**
 	 * This is the main class run against the Hadoop cluster.
 	 * It will launch all the jobs needed for the PageRank algorithm.
@@ -72,8 +62,6 @@ public class PageRank extends Configured implements Tool {
     @Override
     public int run(String[] args) throws Exception {
     	
-    	parseInput(args);
-
 		/* By default an Hadoop job won't start if the output path already exists.
         To fasten the tests, add a clause for local mode execution: 
         if the specified output path is named "test" and it already exists,
@@ -93,26 +81,34 @@ public class PageRank extends Configured implements Tool {
 		System.out.println("****************************************");
 
 		Thread.sleep(1000);
-		
+				
 		
 		String inPath, lastOutPath = null;
+//		Path inPathp, lastOutPathp;
 		
-        // to check the accuracy
+        //utils to check the accuracy
 		String epsOutPath;
 		BufferedReader eps_br;
         String eps_line;
         double eps;
 
         
-		boolean isCompleted = false;
-		PageRank pagerank = new PageRank();
+//		boolean isCompleted = false;
+//		PageRank pagerank = new PageRank();
+
+//		System.out.println("\nRunning Job#1 (graph parsing) ...\n");
+//		isCompleted = pagerank.job1(IN_PATH, OUT_PATH + "/iter00");
+//		if (!isCompleted) {
+//			System.exit(1);
+//		}
 
 		System.out.println("\nRunning Job#1 (graph parsing) ...\n");
-		isCompleted = pagerank.job1(IN_PATH, OUT_PATH + "/iter00");
-		if (!isCompleted) {
-			System.exit(1);
+		Job1ParseGraphDriver j1 = new Job1ParseGraphDriver( new Path(IN_PATH), new Path(OUT_PATH + "/iter00"), false );
+		if ( j1.run(null) != 0 ) {
+			return -1;
 		}
-
+		
+		
 		/* 
 		 * Iterate the MapReduce job to update the PageRanks.
 		 * Every p iterations compute the new estimate of error and check for convergence
@@ -122,17 +118,18 @@ public class PageRank extends Configured implements Tool {
 			lastOutPath = OUT_PATH + "/iter" + (String.format("%02d", i+1));
 			System.out.println("\nRunning Job#2 (PageRank calculation), iteration no. " + (i+1) + " ...\n");
 			System.out.println("inPath:" + inPath + " lastOutPath:" + lastOutPath);
-			isCompleted = pagerank.job2(inPath, lastOutPath);
-			if (!isCompleted) {
-				System.exit(1);
+			Job2CalculateRankDriver j2 = new Job2CalculateRankDriver( new Path(inPath), new Path(lastOutPath), false );
+			if ( j2.run(null) != 0 ) {
+				return -1;
 			}
+
 			if ( i>0 && ((i%PageRank.CONVERGENCE_TEST_PERIODICITY) == 0) ) { //checks for convergence
 				System.out.println("\nRunning Job#3 (check convergence) ...\n");
 				epsOutPath = OUT_PATH + "/eps" + (String.format("%02d", i+1));
 				
-				isCompleted = pagerank.job3(lastOutPath, epsOutPath);
-				if (!isCompleted) {
-					System.exit(1);
+				Job3CheckConvergenceDriver j3 = new Job3CheckConvergenceDriver( new Path(lastOutPath), new Path(epsOutPath), false );
+				if ( j3.run(null) != 0 ) {
+					return -1;
 				}
 
 				//double eps = Double.parseDouble(fs.open(new Path(epsOutPath +"/part-r-00000")).readLine()); *readLine()* is deprecated
@@ -159,22 +156,23 @@ public class PageRank extends Configured implements Tool {
 
 
 		System.out.println("\nRunning Job#4 (rank ordering) ...\n");
-		isCompleted = pagerank.job4(lastOutPath, OUT_PATH + "/result");
-		if (!isCompleted) {
-			System.exit(1);
+		Job4SortRankDriver j4 = new Job4SortRankDriver( new Path(lastOutPath), new Path(OUT_PATH + "/result"), false );
+		if ( j4.run(null) != 0 ) {
+			return -1;
 		}
+
 
 		System.out.println("DONE!");
 		return 0;
     }
 
 	public static void main(String[] args) throws Exception {
-	        System.exit(ToolRunner.run(new Configuration(), new PageRank(), args));
+    	parseInput(args);
+        System.exit(ToolRunner.run(new Configuration(), new PageRank(), args));
 	}
 	
 	/**
-	 * Parse the args in input and assing the passed values to the proper variables 
-	 * 
+	 * Parse the args in input and assign their value to the proper variables 
 	 * @param args
 	 */
 	public static void parseInput(String[] args) {
@@ -223,142 +221,10 @@ public class PageRank extends Configured implements Tool {
 			System.exit(1);
 		}
 
-
-	}
-
-	/**
-	 * This will run the Job #1 (Graph Parsing).
-	 * Will parse the graph given as input and initialize the page rank.
-	 * 
-	 * @param in the directory of the input data
-	 * @param out the directory of the output
-	 */
-	public boolean job1(String in, String out) throws IOException, 
-	ClassNotFoundException, 
-	InterruptedException {
-		Job job = Job.getInstance(new Configuration(), "Job #1");
-		job.setJarByClass(PageRank.class);
-
-		// input / mapper
-		FileInputFormat.addInputPath(job, new Path(in));
-		job.setInputFormatClass(TextInputFormat.class);
-		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(Text.class);
-		job.setMapperClass(Job1ParseGraphMapper.class);
-
-		// output / reducer
-		FileOutputFormat.setOutputPath(job, new Path(out));
-		job.setOutputFormatClass(TextOutputFormat.class);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Text.class);
-		job.setReducerClass(Job1ParseGraphReducer.class);
-
-		return job.waitForCompletion(false);
-
-	}
-
-	/**
-	 * This will run the Job #2 (Rank Calculation).
-	 * It calculates the new ranking and generates the same output format as the input, 
-	 * so this job can run multiple times (more iterations will increase accuracy).
-	 * 
-	 * @param in the directory of the input data
-	 * @param out the directory of the output
-	 */
-	public boolean job2(String in, String out) throws IOException, 
-	ClassNotFoundException, 
-	InterruptedException {
-
-		Job job = Job.getInstance(new Configuration(), "Job #2");
-		job.setJarByClass(PageRank.class);
-
-		// input / mapper
-		FileInputFormat.setInputPaths(job, new Path(in));
-		job.setInputFormatClass(TextInputFormat.class);
-		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(Text.class);
-		job.setMapperClass(Job2CalculateRankMapper.class);
-
-		// output / reducer
-		FileOutputFormat.setOutputPath(job, new Path(out));
-		job.setOutputFormatClass(TextOutputFormat.class);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Text.class);
-		job.setReducerClass(Job2CalculateRankReducer.class);
-
-		return job.waitForCompletion(false);
-
-	}
-
-	/**
-	 * This will run the Job #3 (Check Convergence).
-	 * It calculates the estimated distance in l1-norm between the last rank-vector 
-	 * and the current one. It is supposed to decrease after each iteration.
-	 * 
-	 * @param in the directory of the input data
-	 * @param out the directory of the output
-	 */
-	public boolean job3(String in, String out) throws IOException,
-	ClassNotFoundException,
-	InterruptedException {
-
-
-		Job job = Job.getInstance(new Configuration(), "Job #3");
-		job.setJarByClass(PageRank.class);
-
-		// input / mapper
-		FileInputFormat.setInputPaths(job, new Path(in));
-		job.setInputFormatClass(TextInputFormat.class);
-		job.setMapOutputKeyClass(LongWritable.class);
-		job.setMapOutputValueClass(DoubleWritable.class);
-		job.setMapperClass(Job3CheckConvergenceMapper.class);
-		
-		// output / reducer
-		FileOutputFormat.setOutputPath(job, new Path(out));
-		job.setOutputFormatClass(TextOutputFormat.class);
-		job.setOutputKeyClass(DoubleWritable.class);
-		job.setOutputValueClass(NullWritable.class);
-		//job.setNumReduceTasks(1);
-		job.setReducerClass(Job3CheckConvergenceReducer.class);
-
-		return job.waitForCompletion(false);
-
-	}
-
-	/**
-	 * This will run the Job #4 (Rank Ordering).
-	 * It will sort documents according to their page rank value.
-	 * 
-	 * @param in the directory of the input data
-	 * @param out the directory of the output
-	 */
-	public boolean job4(String in, String out) throws IOException, 
-	ClassNotFoundException, 
-	InterruptedException {
-
-		Job job = Job.getInstance(new Configuration(), "Job #4");
-		job.setJarByClass(PageRank.class);
-
-		// input / mapper
-		FileInputFormat.setInputPaths(job, new Path(in));
-		job.setInputFormatClass(TextInputFormat.class);
-		job.setMapOutputKeyClass(DoubleWritable.class);
-		job.setMapOutputValueClass(Text.class);
-		job.setMapperClass(Job4SortRankMapper.class);
-
-		// output
-		FileOutputFormat.setOutputPath(job, new Path(out));
-		job.setOutputFormatClass(TextOutputFormat.class);
-		job.setOutputKeyClass(DoubleWritable.class);
-		job.setOutputValueClass(Text.class);
-
-		return job.waitForCompletion(false);
-
 	}
 
 	/**
 	 * Print an help text in System.out
-	 * 
 	 * @param err an optional error message to display
 	 */
 	public static void printHelp(String err) {
@@ -382,6 +248,6 @@ public class PageRank extends Configured implements Tool {
 	}
 
 
-
 }
+
 

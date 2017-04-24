@@ -1,8 +1,12 @@
 pad/luchetti/pagerank/Job2CalculateRankReducer.class
 pad/luchetti/pagerank/Job2CalculateRankMapper.class
 pad/luchetti/pagerank/Job1ParseGraphReducer.class
+pad/luchetti/pagerank/Job2CalculateRankDriver.class
 pad/luchetti/pagerank/Job3CheckConvergenceMapper.class
+pad/luchetti/pagerank/Job3CheckConvergenceDriver.class
 pad/luchetti/pagerank/Job3CheckConvergenceReducer.class
 pad/luchetti/pagerank/PageRank.class
+pad/luchetti/pagerank/Job4SortRankDriver.class
 pad/luchetti/pagerank/Job4SortRankMapper.class
+pad/luchetti/pagerank/Job1ParseGraphDriver.class
 pad/luchetti/pagerank/Job1ParseGraphMapper.class
