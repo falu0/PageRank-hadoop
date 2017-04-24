@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# VARIABLES TO SET
+HADOOP_HOME=/home/$USER/hadoop-1.2.1
+WORKING_DIR=/home/$USER/pad_project/pagerank
+
+# DERIVATE VARIABLES
+HADOOP=$HADOOP_HOME/bin/hadoop
+JAR_PATH=$WORKING_DIR/target/pagerank-1.0-SNAPSHOT.jar
+DATASET=$WORKING_DIR/data
+
+
