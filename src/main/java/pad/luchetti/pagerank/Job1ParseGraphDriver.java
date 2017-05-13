@@ -19,6 +19,8 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 //import org.apache.hadoop.util.GenericOptionsParser;
 
+import org.apache.hadoop.mapred.SkipBadRecords;
+
 
 public class Job1ParseGraphDriver extends Configured implements Tool {
 	
@@ -65,6 +67,9 @@ public class Job1ParseGraphDriver extends Configured implements Tool {
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
 		job.setReducerClass(Job1ParseGraphReducer.class);
+
+		//skip max 100 bad input records for the mapper
+		SkipBadRecords.setMapperMaxSkipRecords(conf, 100);
 
 		return (job.waitForCompletion(this.verbose)) ? 0 : -1;
 

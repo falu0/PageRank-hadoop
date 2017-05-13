@@ -2,7 +2,7 @@
 
 # VARIABLES TO SET
 HADOOP_HOME=/home/$USER/hadoop-1.2.1
-WORKING_DIR=/home/$USER/pad_project/pagerank
+WORKING_DIR=/home/$USER/PageRank-hadoop
 
 # DERIVATE VARIABLES
 HADOOP=$HADOOP_HOME/bin/hadoop

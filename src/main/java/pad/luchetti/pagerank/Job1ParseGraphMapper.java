@@ -6,18 +6,20 @@
 package pad.luchetti.pagerank;
 
 import java.io.IOException;
+import java.lang.Exception;
 
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 
 
-public class Job1ParseGraphMapper extends Mapper<Object, Text, Text, Text> {
+public class Job1ParseGraphMapper extends Mapper<LongWritable, Text, Text, Text> {
     
 	private Text kOut = new Text();
 	private Text vOut = new Text();
 
     @Override
-    public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         
         /* PageRank parse graph (mapper)
 		
@@ -34,13 +36,12 @@ public class Job1ParseGraphMapper extends Mapper<Object, Text, Text, Text> {
          */
         
     	
-        if (value.charAt(0) != '#') {
-        	
+        if (value.charAt(0) != '#') { //skip comment
+            /* assume good records */
         	String[] valueSplit = value.toString().split("\\t");
-        	kOut.set(valueSplit[0]);
-        	vOut.set(valueSplit[1]);
+            kOut.set(valueSplit[0]);
+            vOut.set(valueSplit[1]);
             context.write(kOut, vOut);
-            
         }
  
     }
