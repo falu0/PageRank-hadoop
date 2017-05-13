@@ -84,7 +84,6 @@ public class PageRank extends Configured implements Tool {
 				
 		
 		String inPath, lastOutPath = null;
-//		Path inPathp, lastOutPathp;
 		
         //utils to check the accuracy
 		String epsOutPath;
@@ -93,15 +92,6 @@ public class PageRank extends Configured implements Tool {
         double eps;
 
         
-//		boolean isCompleted = false;
-//		PageRank pagerank = new PageRank();
-
-//		System.out.println("\nRunning Job#1 (graph parsing) ...\n");
-//		isCompleted = pagerank.job1(IN_PATH, OUT_PATH + "/iter00");
-//		if (!isCompleted) {
-//			System.exit(1);
-//		}
-
 		System.out.println("\nRunning Job#1 (graph parsing) ...\n");
 		Job1ParseGraphDriver j1 = new Job1ParseGraphDriver( new Path(IN_PATH), new Path(OUT_PATH + "/iter00"), false );
 		if ( j1.run(null) != 0 ) {
@@ -249,5 +239,3 @@ public class PageRank extends Configured implements Tool {
 
 
 }
-
-
